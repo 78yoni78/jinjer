@@ -22,6 +22,17 @@ macro_rules! get_constant {
     };
 }
 
+macro_rules! step_binary_inst {
+    ($self: ident, $arg_type: ident, $op: tt) => {
+        {
+            check_arguments!($self, 2);
+            let a2 = $self.stack.pop().unwrap().$arg_type;
+            let a1 = $self.stack.pop().unwrap().$arg_type;
+            $self.stack.push(Value::$arg_type(a1 $op a2));
+        }
+    };
+}
+
 impl VM {
     pub fn current_inst(&self) -> Inst {
         self.instructions[self.lp]
@@ -37,12 +48,11 @@ impl VM {
         unsafe {
             match self.current_inst() {
                 Nop => (),
-                Add => {
-                    check_arguments!(self, 2);
-                    let i2 = self.stack.pop().unwrap().int;
-                    let i1 = self.stack.pop().unwrap().int;
-                    self.stack.push(Value::int(i1 + i2));
-                },
+                Add => step_binary_inst!(self, int, +),
+                Sub => step_binary_inst!(self, int, -),
+                Mul => step_binary_inst!(self, int, *),
+                Mod => step_binary_inst!(self, int, %),
+                Div => step_binary_inst!(self, int, /),
                 GetConst(index) => {
                     self.stack.push(*get_constant!(self, index));
                 },

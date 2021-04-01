@@ -12,7 +12,8 @@ fn main() {
         Nop, Nop, Nop,
         get_const Value::int(3),
         get_const Value::int(1),
-        Add
+        Add,
+        Mul,
     ]);
     println!("Hello, world! {:?}", vm.run());
 }
