@@ -23,10 +23,6 @@ macro_rules! get_constant {
 }
 
 impl VM {
-    pub fn new(instructions: Vec<Inst>) -> Self {
-        Self { instructions, lp: 0, ..Default::default() }
-    }
-
     pub fn current_inst(&self) -> Inst {
         self.instructions[self.lp]
     }
