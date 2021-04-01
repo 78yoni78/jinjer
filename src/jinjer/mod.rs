@@ -1,8 +1,10 @@
+//  macros come first
+#[macro_use]
+pub mod bytecode_macros;
+
 mod inst;
 mod value;
 mod vm;
-#[macro_use]
-pub mod bytecode_macros;
 
 pub use inst::Inst;
 pub use value::Value;

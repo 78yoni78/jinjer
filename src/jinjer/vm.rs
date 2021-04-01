@@ -59,3 +59,29 @@ impl VM {
         Ok(self.stack)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn getting_constants_nop_and_add() {
+        use Inst::*;
+        
+        let mut vm = VM::default();
+        emit!(vm, [
+            Nop, Nop,
+            get_const Value::int(2),
+            Nop, Nop, Nop,
+            get_const Value::int(3),
+            get_const Value::int(1),
+            Add
+        ]);
+        let result = vm.run().unwrap();
+        assert_eq!(result.len(), 2);
+        unsafe {
+            assert_eq!(result[0].int, 2);
+            assert_eq!(result[1].int, 4);
+        };
+    }
+}
