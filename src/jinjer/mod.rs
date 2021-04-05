@@ -5,6 +5,7 @@ pub mod bytecode_macros;
 mod inst;
 mod value;
 mod vm;
+pub mod tokenizer;
 
 pub use inst::Inst;
 pub use value::Value;
