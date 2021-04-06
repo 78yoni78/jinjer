@@ -41,7 +41,7 @@ fn read_line_chars<R: BufRead>(reader: &mut R) -> Result<Vec<char>> {
 }
 
 impl<R: BufRead> Tokenizer<R> {
-    fn from_reader(mut reader: R) -> Result<Self> {
+    pub fn from_reader(mut reader: R) -> Result<Self> {
         let line_chars = read_line_chars(&mut reader)?;
         Ok(Self { reader, line: 0, col: 0, line_chars })
     }
