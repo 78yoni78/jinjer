@@ -53,7 +53,7 @@ impl<R: BufRead> Tokenizer<R> {
         Ok(())
     }
 
-    fn advance(&mut self) -> Result<()> {
+    fn advance_char(&mut self) -> Result<()> {
         assert!((self.col as usize) < self.line_chars.len());
         self.col += 1;
         while (self.col as usize) >= self.line_chars.len() {
@@ -62,19 +62,19 @@ impl<R: BufRead> Tokenizer<R> {
         Ok(())
     }
 
-    fn peek(&self) -> Option<char> { 
+    fn peek_char(&self) -> Option<char> { 
         self.line_chars.get(self.col as usize).cloned()
     }
 
-    fn pop(&mut self) -> Result<Option<char>> {
-        let ret = self.peek();
-        if let Some(_) = ret { self.advance()?; }
+    fn pop_char(&mut self) -> Result<Option<char>> {
+        let ret = self.peek_char();
+        if let Some(_) = ret { self.advance_char()?; }
         Ok(ret)
     }
 
-    fn pop_if_eq(&mut self, expected: char) -> Result<bool> {
-        let eq = self.peek() == Some(expected); 
-        if eq { self.advance()?; }
+    fn pop_char_if_eq(&mut self, expected: char) -> Result<bool> {
+        let eq = self.peek_char() == Some(expected); 
+        if eq { self.advance_char()?; }
         Ok(eq)
     }
 
@@ -83,8 +83,8 @@ impl<R: BufRead> Tokenizer<R> {
     }
 
     fn skip_whitespace(&mut self) -> Result<()> {
-        while self.peek().map(char::is_whitespace).unwrap_or(false) {
-            self.advance()?;
+        while self.peek_char().map(char::is_whitespace).unwrap_or(false) {
+            self.advance_char()?;
         }
         Ok(())
     }
@@ -92,27 +92,27 @@ impl<R: BufRead> Tokenizer<R> {
     fn read_string(&mut self) -> Result<Token> {
         let mut length = 1;
         let mut acc = String::new();
-        while self.peek().map(|ch| ch != '"').unwrap_or(false) {
-            acc.push(self.pop()?.unwrap());
+        while self.peek_char().map(|ch| ch != '"').unwrap_or(false) {
+            acc.push(self.pop_char()?.unwrap());
             length += 1;
         }
 
 
-        let kind = if self.peek().is_none() {
+        let kind = if self.peek_char().is_none() {
             TokenKind::Error(String::from("Unterminated string"))
         } else {
-            self.advance();  //  skip '"'
+            self.advance_char();  //  skip '"'
             TokenKind::Str(acc)
         };
         Ok(self.token(kind, length))
     }
 
-    pub fn read(&mut self) -> Result<Token> {
+    pub fn pop(&mut self) -> Result<Token> {
         use TokenKind::*;
 
         self.skip_whitespace()?;
 
-        Ok(match self.pop()? {
+        Ok(match self.pop_char()? {
             None => self.token(Eof, 0),
             Some(c) => {
                 match c {
@@ -125,16 +125,16 @@ impl<R: BufRead> Tokenizer<R> {
                     '.' => self.token(Dot, 1),
                     '-' => self.token(Minus, 1),
                     '+' => self.token(Plus, 1),
-                    '/' => if self.pop_if_eq('/')? { 
+                    '/' => if self.pop_char_if_eq('/')? { 
                         self.advance_line()?;   //  skip the whole line (because comments are skipped)
-                        self.read()? // return the token afterwards
+                        self.pop()? // return the token afterwards
                     } else { self.token(Slash, 1) },
                     '*' => self.token(Star, 1),
 
-                    '!' => if self.pop_if_eq('=')? { self.token(BangEqual, 2) } else { self.token(Bang, 1) }
-                    '=' => if self.pop_if_eq('=')? { self.token(EqualEqual, 2) } else { self.token(Equal, 1) }
-                    '<' => if self.pop_if_eq('=')? { self.token(LesserEqual, 2) } else { self.token(Lesser, 1) }
-                    '>' => if self.pop_if_eq('=')? { self.token(GreaterEqual, 2) } else { self.token(Greater, 1) }
+                    '!' => if self.pop_char_if_eq('=')? { self.token(BangEqual, 2) } else { self.token(Bang, 1) }
+                    '=' => if self.pop_char_if_eq('=')? { self.token(EqualEqual, 2) } else { self.token(Equal, 1) }
+                    '<' => if self.pop_char_if_eq('=')? { self.token(LesserEqual, 2) } else { self.token(Lesser, 1) }
+                    '>' => if self.pop_char_if_eq('=')? { self.token(GreaterEqual, 2) } else { self.token(Greater, 1) }
 
                     '"' => self.read_string()?,
 
