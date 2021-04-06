@@ -32,6 +32,7 @@ pub struct Tokenizer<R> {
     line: u32,
     col: u32,
     line_chars: Vec<char>,
+    peek: Option<Token>,
 }
 
 fn read_line_chars<R: BufRead>(reader: &mut R) -> Result<Vec<char>> {
@@ -43,7 +44,7 @@ fn read_line_chars<R: BufRead>(reader: &mut R) -> Result<Vec<char>> {
 impl<R: BufRead> Tokenizer<R> {
     pub fn from_reader(mut reader: R) -> Result<Self> {
         let line_chars = read_line_chars(&mut reader)?;
-        Ok(Self { reader, line: 0, col: 0, line_chars })
+        Ok(Self { reader, line: 0, col: 0, line_chars, peek: None })
     }
 
     fn advance_line(&mut self) -> Result<()> {
@@ -107,7 +108,7 @@ impl<R: BufRead> Tokenizer<R> {
         Ok(self.token(kind, length))
     }
 
-    pub fn pop(&mut self) -> Result<Token> {
+    fn read_token(&mut self) -> Result<Token> {
         use TokenKind::*;
 
         self.skip_whitespace()?;
@@ -142,5 +143,23 @@ impl<R: BufRead> Tokenizer<R> {
                 }
             }
         })
+    }
+
+    fn initialize_peek(&mut self) -> Result<()> {
+        if self.peek.is_none() {
+            self.peek = Some(self.read_token()?);
+        };
+        Ok(())
+    }
+
+    pub fn peek(&mut self) -> Result<&Token> {
+        self.initialize_peek()?;
+        Ok(self.peek.as_ref().unwrap())
+    }
+
+    pub fn pop(&mut self) -> Result<Token> {
+        self.initialize_peek()?;
+        //  return the peek, but replace it with none
+        Ok(self.peek.take().unwrap())
     }
 }
