@@ -102,7 +102,7 @@ impl<R: BufRead> Tokenizer<R> {
         let kind = if self.peek_char().is_none() {
             TokenKind::Error(String::from("Unterminated string"))
         } else {
-            self.advance_char();  //  skip '"'
+            self.advance_char()?;  //  skip '"'
             TokenKind::Str(acc)
         };
         Ok(self.token(kind, length))
