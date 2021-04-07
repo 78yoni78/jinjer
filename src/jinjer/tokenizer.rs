@@ -5,7 +5,7 @@ pub enum TokenKind {
     //  single character misc tokens
     LParen, RParen,
     LBrace, RBrace,
-    Comma, Dot, Minus, Plus,
+    Comma, Dot, Minus, Plus, Percent,
     Semicolon, Slash, Star,
     //  logical operator tokens
     Bang, Equal, BangEqual, EqualEqual,
@@ -131,6 +131,7 @@ impl<R: BufRead> Tokenizer<R> {
                         self.pop()? // return the token afterwards
                     } else { self.token(Slash, 1) },
                     '*' => self.token(Star, 1),
+                    '%' => self.token(Percent, 1),
 
                     '!' => if self.pop_char_if_eq('=')? { self.token(BangEqual, 2) } else { self.token(Bang, 1) }
                     '=' => if self.pop_char_if_eq('=')? { self.token(EqualEqual, 2) } else { self.token(Equal, 1) }
