@@ -107,7 +107,7 @@ impl<R: BufRead> Tokenizer<R> {
 
     fn read_string(&mut self) -> Result<Token> {
         self.begin_token();
-        self.advance_char();    //  skip first '"'
+        self.advance_char()?;    //  skip first '"'
 
         let mut acc = String::new();
         while self.peek_char().map(|ch| ch != '"').unwrap_or(false) {
