@@ -3,7 +3,7 @@ macro_rules! emit {
     ($self: ident, []) => {};
     ($self: ident, [get_const $value: expr $(, $($rest: tt)*)?]) => {
         let x = $self.add_constant($value);
-        emit!($self, [crate::jinjer::Inst::GetConst(x)]);
+        emit!($self, [crate::Inst::GetConst(x)]);
         $(emit!($self, [$($rest)*]);)?
     };
     ($self: ident, [$inst: expr $(, $($rest: tt)*)?]) => {

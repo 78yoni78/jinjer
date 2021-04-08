@@ -1,9 +1,16 @@
+//  macros come first
 #[macro_use]
-mod jinjer;
+pub mod bytecode_macros;
 
-use std::io;
-use jinjer::*;
-use Inst::*;
+mod inst;
+mod value;
+mod vm;
+pub mod tokenizer;
+pub mod parser;
+
+pub use inst::Inst;
+pub use value::Value;
+pub use vm::VM; 
 
 fn main() {
     let s = "x + y";
