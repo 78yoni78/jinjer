@@ -31,6 +31,9 @@ pub struct Tokenizer<R> {
     reader: R,
     line: u32,
     col: u32,
+    token_line: u32,
+    token_col: u32,
+    token_length: u32,
     line_chars: Vec<char>,
     peek: Option<Token>,
 }
@@ -44,7 +47,12 @@ fn read_line_chars<R: BufRead>(reader: &mut R) -> Result<Vec<char>> {
 impl<R: BufRead> Tokenizer<R> {
     pub fn from_reader(mut reader: R) -> Result<Self> {
         let line_chars = read_line_chars(&mut reader)?;
-        Ok(Self { reader, line: 0, col: 0, line_chars, peek: None })
+        Ok(Self { 
+            reader, line_chars, 
+            line: 0, col: 0, 
+            peek: None, 
+            token_line: 0, token_col: 0, token_length: 0,
+        })
     }
 
     fn advance_line(&mut self) -> Result<()> {
@@ -57,8 +65,10 @@ impl<R: BufRead> Tokenizer<R> {
     fn advance_char(&mut self) -> Result<()> {
         assert!((self.col as usize) < self.line_chars.len());
         self.col += 1;
+        self.token_length += 1;
         while (self.col as usize) >= self.line_chars.len() {
             self.advance_line()?;
+            if self.line_chars.is_empty() { break; }    //  handle EOF
         }
         Ok(())
     }
@@ -79,8 +89,13 @@ impl<R: BufRead> Tokenizer<R> {
         Ok(eq)
     }
 
-    fn token(&self, kind: TokenKind, length: u32) -> Token {
-        Token { kind, line: self.line, col: self.col - length, length}
+    fn begin_token(&mut self) {
+        self.token_col = self.col;
+        self.token_line = self.line;
+    } 
+
+    fn end_token(&self, kind: TokenKind) -> Token {
+        Token { kind, line: self.token_line, col: self.token_col, length: self.token_length }
     }
 
     fn skip_whitespace(&mut self) -> Result<()> {
@@ -91,13 +106,13 @@ impl<R: BufRead> Tokenizer<R> {
     }
 
     fn read_string(&mut self) -> Result<Token> {
-        let mut length = 1;
+        self.begin_token();
+        self.advance_char();    //  skip first '"'
+
         let mut acc = String::new();
         while self.peek_char().map(|ch| ch != '"').unwrap_or(false) {
             acc.push(self.pop_char()?.unwrap());
-            length += 1;
         }
-
 
         let kind = if self.peek_char().is_none() {
             TokenKind::Error(String::from("Unterminated string"))
@@ -105,7 +120,31 @@ impl<R: BufRead> Tokenizer<R> {
             self.advance_char()?;  //  skip '"'
             TokenKind::Str(acc)
         };
-        Ok(self.token(kind, length))
+        Ok(self.end_token(kind))
+    }
+
+    fn read_identifier(&mut self) -> Result<Token> {
+        self.begin_token();
+
+        let mut acc = String::new();
+        while self.peek_char().filter(|x| x.is_alphanumeric() || *x == '_' ).is_some() {
+            acc.push(self.pop_char()?.unwrap());
+        }
+
+        Ok(self.end_token(TokenKind::Ident(acc)))
+    }
+
+    fn read_number(&mut self) -> Result<Token> {
+        self.begin_token();
+
+        let mut acc = 0;
+        
+        while std::matches!(self.peek_char(), Some('0'..='9')) {
+            let digit = char::to_digit(self.pop_char()?.unwrap(), 10).unwrap();
+            acc = acc * 10 + digit as i32;
+        }
+
+        Ok(self.end_token(TokenKind::Int(acc)))
     }
 
     fn read_token(&mut self) -> Result<Token> {
@@ -113,34 +152,40 @@ impl<R: BufRead> Tokenizer<R> {
 
         self.skip_whitespace()?;
 
-        Ok(match self.pop_char()? {
-            None => self.token(Eof, 0),
+        Ok(match self.peek_char() {
+            None => {
+                self.begin_token();
+                self.end_token(Eof)
+            },
+            Some('"') => self.read_string()?,
+            Some('0'..='9') => self.read_number()?,
+            Some('a'..='z') | Some('A'..='Z') | Some('_') => self.read_identifier()?,
             Some(c) => {
+                self.begin_token();
+                self.advance_char()?;
                 match c {
-                    '(' => self.token(LParen, 1),
-                    ')' => self.token(RParen, 1),
-                    '{' => self.token(LBrace, 1),
-                    '}' => self.token(RBrace, 1),
-                    ';' => self.token(Semicolon, 1),
-                    ',' => self.token(Comma, 1),
-                    '.' => self.token(Dot, 1),
-                    '-' => self.token(Minus, 1),
-                    '+' => self.token(Plus, 1),
+                    '(' => self.end_token(LParen),
+                    ')' => self.end_token(RParen),
+                    '{' => self.end_token(LBrace),
+                    '}' => self.end_token(RBrace),
+                    ';' => self.end_token(Semicolon),
+                    ',' => self.end_token(Comma),
+                    '.' => self.end_token(Dot),
+                    '-' => self.end_token(Minus),
+                    '+' => self.end_token(Plus),
                     '/' => if self.pop_char_if_eq('/')? { 
                         self.advance_line()?;   //  skip the whole line (because comments are skipped)
                         self.pop()? // return the token afterwards
-                    } else { self.token(Slash, 1) },
-                    '*' => self.token(Star, 1),
-                    '%' => self.token(Percent, 1),
+                    } else { self.end_token(Slash) },
+                    '*' => self.end_token(Star),
+                    '%' => self.end_token(Percent),
 
-                    '!' => if self.pop_char_if_eq('=')? { self.token(BangEqual, 2) } else { self.token(Bang, 1) }
-                    '=' => if self.pop_char_if_eq('=')? { self.token(EqualEqual, 2) } else { self.token(Equal, 1) }
-                    '<' => if self.pop_char_if_eq('=')? { self.token(LesserEqual, 2) } else { self.token(Lesser, 1) }
-                    '>' => if self.pop_char_if_eq('=')? { self.token(GreaterEqual, 2) } else { self.token(Greater, 1) }
+                    '!' => if self.pop_char_if_eq('=')? { self.end_token(BangEqual) } else { self.end_token(Bang) }
+                    '=' => if self.pop_char_if_eq('=')? { self.end_token(EqualEqual) } else { self.end_token(Equal) }
+                    '<' => if self.pop_char_if_eq('=')? { self.end_token(LesserEqual) } else { self.end_token(Lesser) }
+                    '>' => if self.pop_char_if_eq('=')? { self.end_token(GreaterEqual) } else { self.end_token(Greater) }
 
-                    '"' => self.read_string()?,
-
-                    _ => self.token(Error(String::from("Unrecognizable token")), 1),
+                    _ => self.end_token(Error(String::from("Unrecognizable token"))),
                 }
             }
         })
