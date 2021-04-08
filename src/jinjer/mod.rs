@@ -6,6 +6,7 @@ mod inst;
 mod value;
 mod vm;
 pub mod tokenizer;
+pub mod parser;
 
 pub use inst::Inst;
 pub use value::Value;
