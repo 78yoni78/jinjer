@@ -7,6 +7,7 @@ mod value;
 mod vm;
 pub mod tokenizer;
 pub mod parser;
+pub mod generator;
 
 pub use inst::Inst;
 pub use value::Value;
