@@ -6,6 +6,7 @@ pub struct VM {
     pub lp: usize,
     pub stack: Vec<Value>,
     pub constants: Vec<Value>,
+    pub variables: Vec<Value>
 }
 
 macro_rules! check_arguments {
@@ -55,6 +56,17 @@ impl VM {
                 Div => step_binary_inst!(self, int, /),
                 GetConst(index) => {
                     self.stack.push(*get_constant!(self, index));
+                },
+                Var => {
+                    let value = self.stack.pop().ok_or("Stack exhausted")?;
+                    self.variables.push(value);
+                },
+                GetVar(diff) => {
+                    let index = self.variables.len() - 1 - diff;
+                    self.stack.push(self.variables[index]);
+                },
+                EndVar => {
+                    self.variables.pop().ok_or("Variable stack exhausted")?;
                 },
             }
             self.lp += 1;

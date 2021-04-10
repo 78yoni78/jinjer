@@ -132,6 +132,7 @@ impl<R: BufRead> Tokenizer<R> {
             acc.push(self.pop_char()?.unwrap());
         }
 
+        if acc == "let" { return Ok(self.end_token(TokenKind::Let)) }
         Ok(self.end_token(TokenKind::Ident(acc)))
     }
 

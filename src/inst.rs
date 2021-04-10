@@ -7,4 +7,8 @@ pub enum Inst {
     Mul,
     Mod,
     Div,
+    //  Variable instructions
+    Var,
+    GetVar(usize),
+    EndVar,
 }
