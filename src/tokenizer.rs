@@ -92,6 +92,7 @@ impl<R: BufRead> Tokenizer<R> {
     fn begin_token(&mut self) {
         self.token_col = self.col;
         self.token_line = self.line;
+        self.token_length = 0;    
     } 
 
     fn end_token(&self, kind: TokenKind) -> Token {
