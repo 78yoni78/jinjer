@@ -210,3 +210,32 @@ impl<R: BufRead> Tokenizer<R> {
         Ok(self.peek.take().unwrap())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn tokenizer_from_str(x: &'static str) -> Tokenizer<&[u8]> {
+        Tokenizer::from_reader(x.as_bytes()).unwrap()
+    }
+
+    #[test]
+    fn tokenize_simple_expr() {
+        let mut tokenizer = tokenizer_from_str("x + 22 ");
+        assert_eq!(
+            tokenizer.pop().unwrap(),
+            Token { col: 0, line: 0, length: 1, kind:TokenKind::Ident("x".to_string()) },
+        );
+        assert_eq!(
+            tokenizer.pop().unwrap(),
+            Token { col: 2, line: 0, length: 1, kind:TokenKind::Plus },
+        );
+        assert_eq!(
+            tokenizer.pop().unwrap(),
+            Token { col: 4, line: 0, length: 2, kind:TokenKind::Int(22) },
+        );
+        assert_eq!(
+            tokenizer.pop().unwrap(),
+            Token { col: 0, line: 1, length: 0, kind:TokenKind::Eof },
+        );
+    }
+}
