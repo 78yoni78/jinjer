@@ -93,7 +93,7 @@ fn parse_atom<R: BufRead>(tokenizer: &mut Tokenizer<R>) -> Result<Expr> {
             let name: String = expect!(tokenizer, Ident(name), name);
             expect!(tokenizer, TokenKind::Equal);
             let e1 = parse_expr(tokenizer)?;
-            expect!(tokenizer, TokenKind::Semicolon);
+            expect!(tokenizer, TokenKind::In);
             let e2 = parse_expr(tokenizer)?;
             Ok(Expr::Let(name, Box::new((e1, e2))))
         }
