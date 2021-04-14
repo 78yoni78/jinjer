@@ -4,19 +4,34 @@ use std::io::{BufRead, Result};
 pub enum TokenKind {
     //  single character misc tokens
     LParen, RParen,
-    LBrace, RBrace,
     Comma, Dot, Minus, Plus, Percent,
-    Semicolon, Slash, Star,
+    Slash, Star,
     //  logical operator tokens
-    Bang, Equal, BangEqual, EqualEqual,
-    Greater, GreaterEqual,
+    Equal, BangEqual, Greater, GreaterEqual,
     Lesser, LesserEqual,
     //  literals
     Ident(String), Str(String), Float(f32), Int(i32),
     //  keywords
-    And, Or, Else, If, False, True, Let, Eof,
-    //  Error token
-    Error(String),
+    And, Or, Else, If, False, True, Let, In, With,
+    //  Other
+    Error(String), Eof,
+}
+
+fn as_keyword(word: &str) -> Option<TokenKind> {
+    use TokenKind::*;
+
+    match word {
+        "let" =>    Some(Let),
+        "in" =>     Some(In),
+        "and" =>    Some(And),
+        "or" =>     Some(Or),
+        "else" =>   Some(Else),
+        "if" =>     Some(If),
+        "false" =>  Some(False),
+        "true" =>   Some(True),
+        "with" =>   Some(With),
+        _ =>        None
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -132,8 +147,10 @@ impl<R: BufRead> Tokenizer<R> {
             acc.push(self.pop_char()?.unwrap());
         }
 
-        if acc == "let" { return Ok(self.end_token(TokenKind::Let)) }
-        Ok(self.end_token(TokenKind::Ident(acc)))
+        let kind = as_keyword(&acc)
+            .unwrap_or_else(|| TokenKind::Ident(acc));
+
+        Ok(self.end_token(kind))
     }
 
     fn read_number(&mut self) -> Result<Token> {
@@ -168,9 +185,6 @@ impl<R: BufRead> Tokenizer<R> {
                 match c {
                     '(' => self.end_token(LParen),
                     ')' => self.end_token(RParen),
-                    '{' => self.end_token(LBrace),
-                    '}' => self.end_token(RBrace),
-                    ';' => self.end_token(Semicolon),
                     ',' => self.end_token(Comma),
                     '.' => self.end_token(Dot),
                     '-' => self.end_token(Minus),
@@ -182,8 +196,8 @@ impl<R: BufRead> Tokenizer<R> {
                     '*' => self.end_token(Star),
                     '%' => self.end_token(Percent),
 
-                    '!' => if self.pop_char_if_eq('=')? { self.end_token(BangEqual) } else { self.end_token(Bang) }
-                    '=' => if self.pop_char_if_eq('=')? { self.end_token(EqualEqual) } else { self.end_token(Equal) }
+                    '!' => if self.pop_char_if_eq('=')? { self.end_token(BangEqual) } else { self.end_token(Error("Expected = after !".to_string())) }
+                    '=' => self.end_token(Equal),
                     '<' => if self.pop_char_if_eq('=')? { self.end_token(LesserEqual) } else { self.end_token(Lesser) }
                     '>' => if self.pop_char_if_eq('=')? { self.end_token(GreaterEqual) } else { self.end_token(Greater) }
 
