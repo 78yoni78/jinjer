@@ -1,7 +1,7 @@
 use jinjer::*;
 
 fn main() {
-    let code = "let x = 2; 1 + x + 4";
+    let code = "let x = 2 in 1 + x + 4";
     println!("Code: {:?}", code);
     println!();
     let mut vm = VM::default();
