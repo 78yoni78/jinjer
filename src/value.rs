@@ -1,10 +1,15 @@
+mod object;
+use object::Object;
+
 #[derive(Clone, Copy)]
 pub union Value {
     pub int: i32,
+    pub obj: Object,
 }
 
 impl Value {
     pub fn int(int: i32) -> Self { Self { int } }
+    pub fn obj(obj: Object) -> Self { Self { obj } } 
 }
 
 impl std::fmt::Debug for Value {
