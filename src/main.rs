@@ -1,8 +1,8 @@
 use jinjer::*;
 
 fn main() {
-    let code = "let x = 2 in 1 + x + 4";
-    println!("Code: {:?}", code);
+    let code = "\"Hello wordl!\"";
+    println!("Code: {}", code);
     println!();
     let mut vm = VM::default();
     let mut tokenizer = tokenizer::Tokenizer::from_reader(code.as_bytes()).unwrap();

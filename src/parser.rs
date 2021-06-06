@@ -54,6 +54,7 @@ impl BiOper {
 #[derive(Debug, Clone)]
 pub enum Expr {
     IntLiteral(i32),
+    StrLiteral(String),
     BiOper(BiOper, Box<(Expr, Expr)>),
     Var(String),
     Let(String, Box<(Expr, Expr)>),
@@ -78,11 +79,12 @@ macro_rules! expect {
 }
 
 fn parse_atom<R: BufRead>(tokenizer: &mut Tokenizer<R>) -> Result<Expr> {
-    use TokenKind::{Int, Ident, LParen, Let};
+    use TokenKind::{Int, Str, Ident, LParen, Let};
     
     let token = tokenizer.pop().map_err(Error::Io)?;
     match token.kind {
         Int(i) => Ok(Expr::IntLiteral(i)),
+        Str(s) => Ok(Expr::StrLiteral(s)),
         Ident(name) => Ok(Expr::Var(name)),
         LParen => {
             let e = parse_expr(tokenizer)?;

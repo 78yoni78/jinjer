@@ -23,6 +23,7 @@ fn generate_inner(vm: &mut VM, expr: &Expr, map: &mut Variables) {
     use Expr::*;
     match expr {
         &IntLiteral(i) => emit!(vm, [get_const Value::int(i)]),
+        StrLiteral(s) => emit!(vm, [get_str s]),
         &BiOper(oper, ref b) => {
             let (left, right) = &**b;
             let operation_inst = bi_oper_inst(oper);

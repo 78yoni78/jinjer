@@ -1,8 +1,13 @@
 mod object;
-use object::Object;
+pub use object::Object;
 
 #[derive(Clone, Copy)]
 pub union Value {
+    //  needed by the runtime
+    pub usize: usize,
+    pub isize: isize,
+    pub _4bytes: (u8, u8, u8, u8),
+
     pub int: i32,
     pub obj: Object,
 }

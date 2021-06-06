@@ -2,6 +2,7 @@
 pub enum Inst {
     Nop,
     GetConst(usize),
+    GetStr(usize),
     Add,
     Sub,
     Mul,

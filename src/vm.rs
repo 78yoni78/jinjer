@@ -44,6 +44,12 @@ impl VM {
         self.constants.len() - 1
     }
 
+    pub fn add_constants<T>(&mut self, value: T) -> usize where T: IntoIterator<Item=Value> {
+        let ret = self.constants.len();
+        self.constants.extend(value);
+        ret
+    }
+
     pub fn step(&mut self) -> Result<(), &str> {
         use Inst::*;
         unsafe {
@@ -57,6 +63,14 @@ impl VM {
                 GetConst(index) => {
                     self.stack.push(*get_constant!(self, index));
                 },
+                GetStr(index) => {
+                    let bytes = get_constant!(self, index).usize;
+                    let source = get_constant!(self, index + 1) as *const Value as *const u8;
+                    let obj = value::Object::new(std::alloc::Layout::array::<u8>(bytes).unwrap()).unwrap();
+                    let dest = obj.get_mut();
+                    source.copy_to(dest, bytes);
+                    self.stack.push(Value::obj(obj));
+                } 
                 Var => {
                     let value = self.stack.pop().ok_or("Stack exhausted")?;
                     self.variables.push(value);

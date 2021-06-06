@@ -35,6 +35,13 @@ impl Object {
         dealloc(payload.as_ptr() as *mut u8, payload_layout);
     }
 
+    unsafe fn data(payload: NonNull<Header>) -> *mut u8 {
+        let offset = 
+            Layout::new::<Header>()
+            .extend(payload.as_ref().layout).unwrap().1;
+        (payload.as_ptr() as *mut u8).add(offset)
+    }
+
     pub unsafe fn new(layout: Layout) -> Option<Self> {
         let payload = Self::alloc(layout)?;
         Some(Self(payload))
@@ -50,6 +57,14 @@ impl Object {
             }
         }
     }
+
+    pub fn get(&self) -> *const u8 {
+        unsafe { Self::data(self.0) }
+    } 
+
+    pub fn get_mut(&self) -> *mut u8 {
+        unsafe { Self::data(self.0) }
+    } 
 }
 
 impl Clone for Object {
